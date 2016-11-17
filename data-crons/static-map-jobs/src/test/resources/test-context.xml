@@ -1,0 +1,60 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-3.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+	
+
+	<context:component-scan base-package="com.clout.cron.batch"/>
+
+	<!-- Using properties file to replace properties in xml configuration file -->
+	<bean id="jobProperties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="classpath:googleapi.properties" />
+	</bean>
+	
+	
+	<bean id="restTemplate" class="org.springframework.web.client.RestTemplate"/>
+	
+	
+	<bean id="s3Info" class="com.clout.cron.batch.metadata.S3Info">
+		<property name="bucketName" value="${s3.bucket.name}" />
+		<property name="s3Host" value="${s3.host}"/>
+	</bean>
+	
+	
+	<!-- connect to MySQL database -->
+	<bean id="dataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${spring.datasource.driverClassName}" />
+		<property name="url" value="${spring.datasource.url}" />
+		<property name="username" value="${spring.datasource.username}" />
+		<property name="password" value="${spring.datasource.password}" />
+	</bean>
+	
+	
+	
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+		
+		
+	<!-- connect to MySQL database -->
+	<bean id="productionDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${prod.datasource.driverClassName}" />
+		<property name="url" value="${prod.datasource.url}" />
+		<property name="username" value="${prod.datasource.username}" />
+		<property name="password" value="${prod.datasource.password}" />
+	</bean>
+	
+	
+	
+	<bean id="productionJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="productionDataSource"/>
+	</bean>		
+
+</beans>

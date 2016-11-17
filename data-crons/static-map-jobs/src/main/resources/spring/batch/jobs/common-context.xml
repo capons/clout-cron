@@ -1,0 +1,73 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:jdbc="http://www.springframework.org/schema/jdbc" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-3.0.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/util 
+		http://www.springframework.org/schema/util/spring-util-4.0.xsd
+		http://www.springframework.org/schema/jdbc 
+		http://www.springframework.org/schema/jdbc/spring-jdbc-4.0.xsd">
+
+	<context:component-scan base-package="com.clout.cron.batch"/>
+	
+	<util:list id="naicsCategory" value-type="com.clout.cron.batch.model.Naics">
+	</util:list>
+	
+	<util:map id="categoryLevel2Mapping" map-class="java.util.HashMap">
+    </util:map>
+ 
+ 	<util:map id="categoryLevel2ToNaicsMapping" map-class="java.util.HashMap">
+    </util:map>  
+    	
+	
+	<bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor"/>
+
+	<!-- stored job-meta in database -->
+	<bean id="jobLauncher"
+		class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+		<property name="jobRepository" ref="jobRepository" />
+	</bean>
+
+ 
+	<bean id="resourcelessTransactionManager"
+		class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+
+
+	<bean id="jobRepository"
+      class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+      <property name="transactionManager" ref="resourcelessTransactionManager" />
+   	</bean>
+
+ <!--
+  <bean id="jobRepository"
+	class="org.springframework.batch.core.repository.support.JobRepositoryFactoryBean">
+	<property name="dataSource" ref="batchDataSource" />
+	<property name="transactionManager" ref="batchTransactionManager" />
+	<property name="databaseType" value="mysql" />
+  </bean>
+ 
+  <jdbc:initialize-database data-source="batchDataSource">
+	<jdbc:script location="org/springframework/batch/core/schema-drop-mysql.sql" />
+	<jdbc:script location="org/springframework/batch/core/schema-mysql.sql" />
+  </jdbc:initialize-database>
+ -->
+
+
+
+	<!--  Handy http support -->
+	<bean id="restTemplate" class="org.springframework.web.client.RestTemplate">
+	    <constructor-arg>
+	        <bean class="org.springframework.http.client.HttpComponentsClientHttpRequestFactory">
+	            <property name="readTimeout" value="${application.urlReadTimeout}" />
+	            <property name="connectTimeout" value="${application.urlConnectionTimeout}" />
+	        </bean>
+	    </constructor-arg>
+	</bean>	
+
+</beans>

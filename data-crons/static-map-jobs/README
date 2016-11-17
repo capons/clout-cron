@@ -1,0 +1,6 @@
+# Allows for creating a platform independent script to run jar
+gradle wrapper
+
+Usage
+  java -jar target/dummy.googleapi-0.0.1-SNAPSHOT.jar
+

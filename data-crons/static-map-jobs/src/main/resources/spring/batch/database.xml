@@ -1,0 +1,131 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:batch="http://www.springframework.org/schema/batch" 
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-3.0.xsd
+		http://www.springframework.org/schema/data/mongo
+        http://www.springframework.org/schema/data/mongo/spring-mongo-1.0.xsd
+        http://www.springframework.org/schema/tx
+        http://www.springframework.org/schema/tx/spring-tx.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+	
+	<!-- 
+	<bean id="localDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<property name="driverClass" value="${local.spring.datasource.driverClassName}" />
+		<property name="jdbcUrl" value="${local.spring.datasource.url}" />
+		<property name="user" value="${local.spring.datasource.username}" />
+		<property name="password" value="${local.spring.datasource.password}" />
+		<property name="preferredTestQuery" value="SELECT 1" />
+		<property name="idleConnectionTestPeriod" value="300" />	
+		<property name="initialPoolSize" value="5" />
+		<property name="maxPoolSize" value="5" />
+		<property name="minPoolSize" value="5" />
+		<property name="maxIdleTime" value="3000" />
+	</bean>	
+	
+
+	<bean id="batchDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${batch.datasource.driverClassName}" />
+		<property name="url" value="${batch.datasource.url}" />
+		<property name="username" value="${batch.datasource.username}" />
+		<property name="password" value="${batch.datasource.password}" />
+	</bean>	
+	
+	<bean id="batchTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager" scope="singleton">
+	  <property name="dataSource" ref="batchDataSource" />
+	</bean>	
+		-->
+		
+		
+	<bean id="localDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${local.spring.datasource.driverClassName}" />
+		<property name="url" value="${local.spring.datasource.url}" />
+		<property name="username" value="${local.spring.datasource.username}" />
+		<property name="password" value="${local.spring.datasource.password}" />
+	</bean>	
+	 
+	
+	
+	<!-- connect to MySQL database -->
+	<bean id="dataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${spring.datasource.driverClassName}" />
+		<property name="url" value="${spring.datasource.url}" />
+		<property name="username" value="${spring.datasource.username}" />
+		<property name="password" value="${spring.datasource.password}" />
+	</bean>
+
+	
+	<!-- 
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<property name="driverClass" value="${spring.datasource.driverClassName}" />
+		<property name="jdbcUrl" value="${spring.datasource.url}" />
+		<property name="user" value="${spring.datasource.username}" />
+		<property name="password" value="${spring.datasource.password}" />
+		<property name="preferredTestQuery" value="SELECT 1" />
+		<property name="idleConnectionTestPeriod" value="300" />	
+		<property name="initialPoolSize" value="3" />
+		<property name="maxPoolSize" value="5" />
+		<property name="minPoolSize" value="10" />
+		<property name="maxIdleTime" value="1000" />		
+	</bean>		
+	 -->
+	 
+
+	
+	
+	<bean id="jdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="dataSource"/>
+	</bean>
+	
+	
+	
+	<bean id="localJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="localDataSource"/>
+	</bean>
+	
+	<bean id="localTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+	  scope="singleton">
+	  <property name="dataSource" ref="localDataSource" />
+	</bean>
+
+	<bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+	  scope="singleton">
+	  <property name="dataSource" ref="dataSource" />  
+	</bean>	
+	
+	
+	
+	<tx:annotation-driven transaction-manager="transactionManager"/>
+	
+	<tx:annotation-driven transaction-manager="localTransactionManager"/>
+	
+	
+	
+	
+ 	<bean id="mongo" class="com.mongodb.Mongo">
+      <constructor-arg name="addr" ref="address" />
+      <constructor-arg name="options" ref="options" />
+   </bean>
+
+   <bean id="options" class="com.mongodb.MongoOptions">
+      <property name="connectionsPerHost" value="${mongo.db.pool.size}"/>
+      <property name="maxWaitTime" value="${mongo.db.pool.maxwait}"/>
+   </bean>
+
+   <bean id="address" class="com.mongodb.ServerAddress">
+      <constructor-arg name="host" value="${cron.mongo.db.host}" />
+      <constructor-arg name="port" value="${cron.mongo.db.port}" />
+   </bean>
+
+   <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+      <constructor-arg ref="mongo" />
+      <constructor-arg name="databaseName" value="${cron.mongo.db.name}" />
+   </bean>
+    
+</beans>

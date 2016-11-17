@@ -1,0 +1,316 @@
+	<?php
+/*
+ * This document includes global environment-specific settings
+ *
+ */
+ 
+ 
+/*
+ *---------------------------------------------------------------
+ * GLOBAL SETTINGS
+ *---------------------------------------------------------------
+ */
+	define('ENVIRONMENT', 'local');
+	
+	define('SECURE_MODE', FALSE);
+	
+	define('BASE_URL', 'http://localhost:8888/clout-dev/dev-v1.3.2-cron/');# Set to HTTPS:// if SECURE_MODE = TRUE
+	
+	define('IAM_SERVER_URL', 'http://localhost:8888/clout-dev/dev-v1.3.2-iam/main.php');
+	
+	define('MESSAGE_SERVER_URL', 'http://localhost:8888/clout-dev/dev-v1.3.2-message/main.php');
+	
+	define('MYSQL_SERVER_URL', 'http://localhost:8888/clout-dev/dev-v1.3.2-mysql/main.php');
+	
+	define('SECURITY_SERVER_URL', 'http://localhost:8888/clout-dev/dev-v1.3.2-security/main.php');
+	
+	define('RETRIEVE_URL_DATA_IGNORE', 3);#The starting point to obtain the passed url data
+	
+	define("MINIFY", FALSE);
+	
+	define('PORT_HTTP', '80');
+  
+  	define('PORT_HTTP_SSL', '443');
+	
+	define('PHP_LOCATION', "php5");
+
+ 	define('ENABLE_PROFILER', FALSE); # See perfomance stats based on set benchmarks
+	
+
+
+
+
+
+/*
+ *---------------------------------------------------------------
+ * API SETTINGS
+ *---------------------------------------------------------------
+ */
+
+	define('API_URL', 'http://dev-be-prc1.clout.com/v1/');
+	
+	define('API_PUBLIC_URL', 'http://dev-be-prc1.clout.com/v1/');
+	
+	define('API_KEY', 'xt9487593-234u78i345345k-rt845k45p234');
+	
+	
+	
+
+
+/*
+ *---------------------------------------------------------------
+ * CRON JOB SETTINGS
+ *---------------------------------------------------------------
+ */
+
+	define('CRON_HOME_URL',  "/var/www/");
+	
+	define('CRON_REFRESH_PERIOD', "5 minutes");
+
+	define('DEFAULT_CRON_HOME_URL', "/var/www/");
+	
+	# Use in case of multiple system installations on one server
+	# e.g., serialize(array("/var/www/clout-ver-1/", "/var/www/clout-ver-2/", "/var/www/clout-ver-3/"))
+	# If only one installation has cron jobs, serialize(array(getcwd()."/")) works fine
+	define("CRON_INSTALLATIONS", serialize(array("/var/www/"))); 
+	
+	define('APACHE_USER', "www-data");
+	
+	
+	
+	# Rundeck settings
+	define('RUNDECK_SERVER', 'pro-dw-rnd1.clout.com');
+	
+	define('RUNDECK_SERVER_URL', 'http://pro-dw-rnd1.clout.com:8843/');
+	
+	define('RUNDECK_POST_URL', RUNDECK_SERVER_URL.'upload_job.php');
+	
+	define('RUNDECK_AUTH_TOKEN', 'rundeck-auth-token'); # if needed
+	
+	define('RUNDECK_DEFAULT_JOB_PROCESSOR', 'tst.clout.com:8999');
+
+
+
+/*
+ *---------------------------------------------------------------
+ * QUERY CACHE SETTINGS
+ *---------------------------------------------------------------
+ */
+ 	
+	define('ENABLE_QUERY_CACHE', FALSE); 
+
+	
+
+
+/*
+ *---------------------------------------------------------------
+ * MESSAGE CACHE SETTINGS
+ *---------------------------------------------------------------
+ */
+ 	
+	define('ENABLE_MESSAGE_CACHE', FALSE); 
+
+ 	
+	
+
+
+/*
+ *---------------------------------------------------------------
+ * SMS CREDENTIALS
+ *---------------------------------------------------------------
+ */
+ 	
+	define('SMS_GLOBAL_USERNAME', 'sms-global-api-user'); 
+ 	
+ 	define('SMS_GLOBAL_PASSWORD', 'sms-global-api-pass'); 
+ 	
+ 	define('SMS_GLOBAL_VERIFIED_SENDER', 'verified-phone-number-with-country-code'); 
+ 
+
+ 
+ 	
+
+
+/*
+ *---------------------------------------------------------------
+ * AMAZON S3 BUCKET SETTINGS
+ *---------------------------------------------------------------
+ */
+ 	
+	define('S3_BUCKET_NAME', 'pro-dw-s3b1');
+	
+	define('S3_ACCESS_KEY', 's3-access-key'); 
+ 	
+ 	define('S3_ACCESS_SECRET', 's3-access-secret'); 
+	
+	define('S3_URL', 'https://'.S3_BUCKET_NAME.'.s3.amazonaws.com/');
+ 
+  
+ 
+ 	
+	
+
+
+/*
+ *---------------------------------------------------------------
+ * PLAID CREDENTIALS
+ *---------------------------------------------------------------
+ */
+ 	
+	define('PLAID_CLIENT_ID', '53598e0b18fed60710851327'); 
+ 	
+ 	define('PLAID_SECRET', 'AhNfb_cdk--WQDpkkz8JTo'); 
+	
+ 	define('PLAID_PRODUCTION_API_URL', 'https://api.plaid.com'); 
+	
+ 	define('PLAID_DEV_API_URL', 'https://tartan.plaid.com'); 
+ 	
+ 	define('PLAID_CONNECTION_URL', (ENVIRONMENT == 'local' || ENVIRONMENT == 'development'? PLAID_DEV_API_URL: PLAID_PRODUCTION_API_URL)); 
+ 
+ 
+ 
+	
+	
+
+
+/*
+ *---------------------------------------------------------------
+ * GOOGLE CREDENTIALS
+ * Search Engine Management: https://cse.google.com/cse/setup/basic?cx=017959134187640591984:vqwnnrzva0i
+ * API Management: https://console.developers.google.com/project/807729000380/clouddev/develop/browse
+ *---------------------------------------------------------------
+ */
+ 	
+	define('GOOGLE_API_KEY', 'AIzaSyDzUPJlJ7PkSPrnysdMQPYicvbdciAeTNw'); 
+
+	define('GOOGLE_SEARCH_ENGINE_ID', '017959134187640591984:vqwnnrzva0i');
+
+	define('GOOGLE_SEARCH_API_URL', 'https://www.googleapis.com/customsearch/v1');
+	
+	# GEOCODING DETAILS
+	define('GOOGLE_GEOCODING_API_URL', 'https://maps.googleapis.com/maps/api/geocode/json');
+
+
+ 
+ 
+
+/*
+ *
+ *	0 = Disables logging, Error logging TURNED OFF
+ *	1 = Error Messages (including PHP errors)
+ *	2 = Debug Messages
+ *	3 = Informational Messages
+ *	4 = All Messages
+ *	The log file can be found in: [HOME_URL]application/logs/
+ *	Run >tail -n50 log-YYYY-MM-DD.php to view the errors being generated
+ */
+	define('LOG_ERROR_LEVEL', 4);
+
+
+			
+/*
+ *--------------------------------------------------------------------------
+ * URI PROTOCOL
+ *--------------------------------------------------------------------------
+ *
+ * The default setting of "AUTO" works for most servers.
+ * If your links do not seem to work, try one of the other delicious flavors:
+ *
+ * 'AUTO'	
+ * 'REQUEST_URI'
+ * 'PATH_INFO'	
+ * 'QUERY_STRING'
+ * 'ORIG_PATH_INFO'
+ *
+ */
+	
+	define('URI_PROTOCOL', 'AUTO'); // Set "AUTO" For WINDOWS
+									       // Set "REQUEST_URI" For LINUX
+
+/*
+ *---------------------------------------------------------------
+ * MySQL DATABASE SETTINGS
+ *---------------------------------------------------------------
+ */
+
+	# WRITE SETTINGS
+	define('GROUPNAME_CRON_WRITE', "pro-dw-crn1.clout.com");
+	
+	define('HOSTNAME_CRON_WRITE', "192.168.88.250");	        
+	
+	define('USERNAME_CRON_WRITE', "extlocaluser");
+	
+	define('PASSWORD_CRON_WRITE', "3xtCl0ut");
+	
+	define('DATABASE_CRON_WRITE', "clout_v1_3cron");
+	
+	define('DBDRIVER_CRON_WRITE', "mysqli");
+	
+	define('DBPORT_CRON_WRITE', "3306");
+	
+	
+	# READ SETTINGS
+	define('GROUPNAME_CRON_READ', "pro-dw-crn2.clout.com");
+	
+	define('HOSTNAME_CRON_READ', "192.168.88.250");	        
+	
+	define('USERNAME_CRON_READ', "extlocaluser");
+	
+	define('PASSWORD_CRON_READ', "3xtCl0ut");
+	
+	define('DATABASE_CRON_READ', "clout_v1_3cron");
+	
+	define('DBDRIVER_CRON_READ', "mysqli");
+	
+	define('DBPORT_CRON_READ', "3306");
+	
+	define('MEMCACHED_PERIOD', 10); # number of seconds data is cached before expiry
+	
+
+/*
+ *---------------------------------------------------------------
+ * MONGODB DATABASE SETTINGS
+ *---------------------------------------------------------------
+ */
+
+	define('MONGODB_ENABLE', FALSE);
+	
+	define('MONGODB_HOSTNAME', "192.168.88.250");	        
+	
+	define('MONGODB_USERNAME', "extlocaluser");
+	
+	define('MONGODB_PASSWORD', "3xtCl0ut");
+	
+	define('MONGODB_DATABASE', "cl");
+	
+	define('MONGODB_DBDRIVER', "mongodb");
+	
+	define('MONGODB_DBPORT', "27017");
+
+
+
+	
+
+/*
+ *---------------------------------------------------------------
+ * EMAIL SETTINGS
+ *---------------------------------------------------------------
+ */
+	define('SMTP_HOST', "localhost");
+	
+	define('SMTP_PORT', "25");
+	
+	define('SMTP_USER', "root"); 
+	
+	define('SMTP_PASS', "");
+	
+	define('FLAG_TO_REDIRECT', "0");// 1 => Redirect emails to a specific mail id, 
+									// 0 => No need to redirect emails.
+									
+	# SES settings
+	# ---------------------------------------------------------------
+	define('SES_ACCESS_KEY', "ses-access-key");
+	
+	define('SES_SECRET', "ses-key-secret");					
+
+?>

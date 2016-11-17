@@ -1,0 +1,14 @@
+/target/
+/logs/
+sql/
+static-map-jobs/log.4.6.2016/
+static-map-jobs/log.sitemap.4.6.2016/
+static-map-jobs/log/
+static-map-jobs/sitemap.zip
+static-map-jobs/sitemap/
+static-map-jobs/sitemaps.zip
+static-map-jobs/sitemaps/
+static-map-jobs/src/test/resources/prod-context.xml
+static-map-jobs/src/test/resources/prod.properties
+mongodb-osx-x86_64-3.2.6.tgz
+mongodb-osx-x86_64-3.2.6/

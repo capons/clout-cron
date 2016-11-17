@@ -1,0 +1,83 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-3.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+
+	<context:component-scan base-package="com.clout.cron.batch" />
+	
+	
+	<!-- Using properties file to replace properties in xml configuration file -->
+	<bean id="jobProperties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="classpath:prod.properties" />
+	</bean>	
+
+
+	<!-- connect to MySQL database -->
+	<bean id="productionDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${prod.datasource.driverClassName}" />
+		<property name="url" value="${prod.datasource.url}" />
+		<property name="username" value="${prod.datasource.username}" />
+		<property name="password" value="${prod.datasource.password}" />
+	</bean>
+
+
+
+	<bean id="productionJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="productionDataSource" />
+	</bean>
+
+
+	<bean id="prodCronDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${prod.cron.datasource.driverClassName}" />
+		<property name="url" value="${prod.cron.datasource.url}" />
+		<property name="username" value="${prod.cron.datasource.username}" />
+		<property name="password" value="${prod.cron.datasource.password}" />
+	</bean>
+
+
+
+	<bean id="prodCronJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="prodCronDataSource" />
+	</bean>
+
+
+	<bean id="prodMsgDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${prod.msg.datasource.driverClassName}" />
+		<property name="url" value="${prod.msg.datasource.url}" />
+		<property name="username" value="${prod.msg.datasource.username}" />
+		<property name="password" value="${prod.msg.datasource.password}" />
+	</bean>
+
+
+
+	<bean id="prodMsgJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="prodMsgDataSource" />
+	</bean>
+
+
+
+
+	<bean id="prodIamDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${prod.iam.datasource.driverClassName}" />
+		<property name="url" value="${prod.iam.datasource.url}" />
+		<property name="username" value="${prod.iam.datasource.username}" />
+		<property name="password" value="${prod.iam.datasource.password}" />
+	</bean>
+
+
+
+
+	<bean id="prodIamJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="prodIamDataSource" />
+	</bean>
+</beans>

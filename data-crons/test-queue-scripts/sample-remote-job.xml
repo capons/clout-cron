@@ -1,0 +1,42 @@
+<joblist>
+  <job>
+    <description>JOB-USER-1234567: remote-job-post-test</description>
+    <dispatch>
+      <excludePrecedence>true</excludePrecedence>
+      <keepgoing>false</keepgoing>
+      <rankOrder>ascending</rankOrder>
+      <threadcount>1</threadcount>
+    </dispatch>
+    <executionEnabled>true</executionEnabled>
+    <id>job-user-123-remote-job-post-test-9034025782983457290007</id>
+    <loglevel>DEBUG</loglevel>
+    <name>JOB-USER-123</name>
+    <nodefilters>
+      <filter>hostname: localhost</filter>
+    </nodefilters>
+    <nodesSelectedByDefault>true</nodesSelectedByDefault>
+    <notification>
+      <onfailure>
+        <email attachLog='true' recipients='al@clout.com' subject='JOB FAILED: job-user-123-remote-job-post-test-9034025782983457290007' />
+        <webhook urls='http://localhost/delete_job.php?job_id=job-user-123-remote-job-post-test-9034025782983457290007&amp;auth_token=as8sadf98sdfY4234g234P' />
+      </onfailure>
+      <onsuccess>
+        <webhook urls='http://localhost/delete_job.php?job_id=job-user-123-remote-job-post-test-9034025782983457290007&amp;auth_token=as8sadf98sdfY4234g234P' />
+      </onsuccess>
+    </notification>
+    <schedule>
+      <month month='*' />
+      <time hour='*' minute='0/1' seconds='0/1' />
+      <weekday day='*' />
+      <year year='*' />
+    </schedule>
+    <scheduleEnabled>true</scheduleEnabled>
+    <sequence keepgoing='false' strategy='node-first'>
+      <command>
+        <description>check who is logged in</description>
+        <exec>whoami</exec>
+      </command>
+    </sequence>
+    <uuid>job-user-123-remote-job-post-test-9034025782983457290007</uuid>
+  </job>
+</joblist>

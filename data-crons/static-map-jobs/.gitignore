@@ -1,0 +1,11 @@
+/target/
+/logs/
+log.4.6.2016/
+log.sitemap.4.6.2016/
+log/
+sitemap.zip
+sitemap/
+sitemaps.zip
+sitemaps/
+src/test/resources/prod-context.xml
+src/test/resources/prod.properties

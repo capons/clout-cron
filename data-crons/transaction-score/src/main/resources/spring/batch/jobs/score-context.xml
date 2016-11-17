@@ -1,0 +1,150 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-3.0.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/util 
+		http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+
+	<!-- Using properties file to replace properties in xml configuration file -->
+	<bean id="jobProperties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="file:/opt/cloutjobs/score/score.properties" />
+	</bean>
+		
+	<util:list id="naicsCategory" value-type="com.clout.cron.batch.model.Naics">
+	</util:list>
+	
+	<util:map id="categoryLevel2Mapping" map-class="java.util.HashMap">
+    </util:map>
+ 
+ 	<util:map id="categoryLevel2ToNaicsMapping" map-class="java.util.HashMap">
+    </util:map>   
+    
+
+	<batch:job id="scoreJob">	
+	    <batch:step id="cachePartitionStep" next="scorePartitionStep">
+			<batch:partition step="cachingStep" partitioner="rangePartitioner">
+				<batch:handler grid-size="${cron.job.grid.size}" task-executor="taskExecutor" />
+			</batch:partition>
+	    </batch:step>	
+		<!-- Decision tasklet to decide what store index to start at -->
+	    <batch:step id="scorePartitionStep" next="recordJobStep">
+			<batch:partition step="scoreStep" partitioner="rangePartitioner">
+				<batch:handler grid-size="${cron.job.grid.size}" task-executor="taskExecutor" />
+			</batch:partition>
+	    </batch:step>
+	    <batch:step id="recordJobStep">
+	    	<batch:tasklet ref="recordStateTasklet" />
+	    </batch:step>
+	</batch:job>
+	
+	
+
+	<batch:step id="scoreStep">
+		<batch:tasklet transaction-manager="readTransactionTransactionManager">
+			<batch:chunk reader="scoreItemReader" processor="scoreItemProcessor"  processor-transactional="false" writer="scoreItemWriter" commit-interval="${cron.job.commit.interval}">
+    		</batch:chunk>
+
+		    <batch:listeners>
+				<batch:listener ref="cronStepListener" />
+				<batch:listener ref="cronWriteListener" />
+		    </batch:listeners>			
+			
+		</batch:tasklet>
+	</batch:step>
+
+
+	<!-- Business data is collected via transaction id  -->
+	<bean id="transactionPagingItemReader" class="org.springframework.batch.item.database.JdbcPagingItemReader"
+		scope="step">
+		<property name="dataSource" ref="readTransactionDataSource" />
+		<property name="queryProvider">
+			<bean
+				class="org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean">
+				<property name="dataSource" ref="readTransactionDataSource" />
+				<property name="selectClause" value="select *" /> 
+				<property name="fromClause" value="from transactions" />
+				<property name="whereClause" value=" where id &gt;= :fromId and id &lt;= :toId " />
+				<property name="sortKey" value="id" />
+			</bean>
+		</property>
+		<!-- Inject via the ExecutionContext in rangePartitioner -->
+		<property name="parameterValues">
+			<map>
+				<entry key="fromId" value="#{stepExecutionContext[fromId]}" />
+				<entry key="toId" value="#{stepExecutionContext[toId]}" />
+			</map>
+		</property>
+		<property name="pageSize" value="1000" />
+		<property name="rowMapper">
+			<bean class="com.clout.cron.batch.mapper.TransactionsMapper" />
+		</property>
+	</bean>
+	
+
+	<!--  Update from geolocation and google places -->
+  <bean id="transactionUpdateItemWriter"
+	class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+	<property name="dataSource" ref="writeStoreDataSource" />
+	<property name="sql">
+	  <value>
+            <![CDATA[       
+            	UPDATE transactions SET store_id = :storeId  WHERE id = :id; 
+            ]]>
+	  </value>
+	</property>
+	<!-- It will take care matching between object property and sql name parameter -->
+	<property name="itemSqlParameterSourceProvider">
+		<bean
+		class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+	</property>
+  </bean>
+
+
+	<batch:step id="cachingStep">
+		<batch:tasklet transaction-manager="readStoreTransactionManager">
+			<batch:chunk reader="storeItemReader"  writer="businessIdCacheItemWriter" commit-interval="100"/>
+
+		    <batch:listeners>
+				<batch:listener ref="cronStepListener" />
+				<batch:listener ref="cronWriteListener" />
+		    </batch:listeners>			
+			
+		</batch:tasklet>
+	</batch:step>
+
+
+	<!-- Load it all into memory  -->
+	<bean id="storeItemReader" class="org.springframework.batch.item.database.JdbcPagingItemReader"
+		scope="step">
+		<property name="dataSource" ref="readStoreDataSource" />
+		<property name="queryProvider">
+			<bean
+				class="org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean">
+				<property name="dataSource" ref="readStoreDataSource" />
+				<property name="selectClause" value="select id, latitude, longitude, name, address_line_1, address_line_2, city, state, zipcode, _country_code, phone_number, website, public_store_key, key_words" />
+				<property name="fromClause" value="from stores" />
+				<property name="whereClause" value="where id &gt;= :fromId and id &lt;= :toId" />
+				<property name="sortKey" value="id" />
+			</bean>
+		</property>   
+		<!-- Inject via the ExecutionContext in rangePartitioner -->
+		<property name="parameterValues">
+			<map>
+				<entry key="fromId" value="#{stepExecutionContext[fromId]}" />
+				<entry key="toId" value="#{stepExecutionContext[toId]}" />
+			</map>
+		</property>		
+		<property name="pageSize" value="1000" />
+		<property name="rowMapper">
+			<bean class="com.clout.cron.batch.mapper.StoreMapper" />
+		</property>
+	</bean>
+	
+
+</beans>

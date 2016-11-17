@@ -1,0 +1,45 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-3.0.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd">
+
+
+	<context:component-scan base-package="com.clout.cron.batch"/>
+
+	<bean id="taskExecutor" class="org.springframework.core.task.SimpleAsyncTaskExecutor"/>
+
+
+	<bean id="transactionManager"
+		class="org.springframework.batch.support.transaction.ResourcelessTransactionManager" />
+
+
+	<!-- stored job-meta in database -->
+	<bean id="jobLauncher"
+		class="org.springframework.batch.core.launch.support.SimpleJobLauncher">
+		<property name="jobRepository" ref="jobRepository" />
+	</bean>
+
+
+	<bean id="jobRepository"
+      class="org.springframework.batch.core.repository.support.MapJobRepositoryFactoryBean">
+      <property name="transactionManager" ref="transactionManager" />
+   	</bean>
+
+
+
+	<!--  Handy http support -->
+	<bean id="restTemplate" class="org.springframework.web.client.RestTemplate">
+	    <constructor-arg>
+	        <bean class="org.springframework.http.client.HttpComponentsClientHttpRequestFactory">
+	            <property name="readTimeout" value="${application.urlReadTimeout}" />
+	            <property name="connectTimeout" value="${application.urlConnectionTimeout}" />
+	        </bean>
+	    </constructor-arg>
+	</bean>	
+
+</beans>

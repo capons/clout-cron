@@ -1,0 +1,103 @@
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-3.0.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/util 
+		http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+
+
+
+	<!-- Using properties file to replace properties in xml configuration file -->
+	<bean id="jobProperties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="file:/opt/store_data/googleapi.properties" />
+	</bean>	
+	
+	<util:map id="categories" map-class="java.util.HashMap">
+    </util:map>
+
+	<batch:job id="storeDataUpdateJob">	
+		<!-- Decision tasklet to decide what store index to start at -->
+
+	    <batch:step id="keywordsPartitionStep" next="recordJobStep">
+			<batch:partition step="keywordsUpdateStep" partitioner="rangePartitioner">
+				<batch:handler grid-size="100" task-executor="taskExecutor" />
+			</batch:partition>
+	    </batch:step>
+	    <batch:step id="recordJobStep">
+	    	<batch:tasklet ref="recordStateTasklet" />
+	    </batch:step>
+	</batch:job>
+
+
+	<batch:step id="keywordsUpdateStep">
+		<batch:tasklet>
+			<batch:chunk reader="storeKeywordItemReader" writer="customKeywordItemWriter" commit-interval="100" skip-limit="${cron.job.static.map.skip.limit}" processor-transactional="false">
+    			<!--  Skipping is safe  -->
+    			<batch:skippable-exception-classes>
+      				<batch:include class="com.clout.cron.batch.task.TaskException" />
+    			</batch:skippable-exception-classes>			
+    		</batch:chunk>
+
+		    <batch:listeners>
+				<batch:listener ref="cronStepListener" />
+				<batch:listener ref="cronWriteListener" />
+		    </batch:listeners>			
+			
+		</batch:tasklet>
+	</batch:step>	
+	
+
+	<!-- Load it all into memory  -->
+	<bean id="storeIdItemReader" class="org.springframework.batch.item.database.JdbcPagingItemReader"
+		scope="step">
+		<property name="dataSource" ref="dataSource" />
+		<property name="queryProvider">
+			<bean
+				class="org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean">
+				<property name="dataSource" ref="dataSource" />
+				<property name="selectClause" value="select id, longitude, latitude, name, address_line_1, address_line_2, city, state, zipcode, _country_code" />
+				<property name="fromClause" value="from stores" />
+				<property name="whereClause" value="where id &gt;= :fromId and id &lt;= :toId" />
+				<property name="sortKey" value="id" />
+			</bean>
+		</property>
+		<!-- Inject via the ExecutionContext in rangePartitioner -->
+		<property name="parameterValues">
+			<map>
+				<entry key="fromId" value="#{stepExecutionContext[fromId]}" />
+				<entry key="toId" value="#{stepExecutionContext[toId]}" />
+			</map>
+		</property>
+		<property name="pageSize" value="1000" />
+		<property name="rowMapper">
+			<bean class="com.clout.cron.batch.mapper.StoreMapper" />
+		</property>
+	</bean>
+
+
+  <bean id="storeKeywordUpdateItemWriter"
+	class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+	<property name="dataSource" ref="dataSource" />
+	<property name="sql">
+	  <value>
+            <![CDATA[       
+            	UPDATE stores SET `key_words` = :keyWords, `public_store_key` = :publicStoreKey WHERE `id` = :storeId; 
+            ]]>
+	  </value>
+	</property>
+	<!-- It will take care matching between object property and sql name parameter -->
+	<property name="itemSqlParameterSourceProvider">
+		<bean
+		class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+	</property>
+  </bean>
+
+
+</beans>

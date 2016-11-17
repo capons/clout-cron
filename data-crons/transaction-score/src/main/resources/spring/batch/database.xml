@@ -1,0 +1,210 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:batch="http://www.springframework.org/schema/batch" 
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-3.0.xsd
+		http://www.springframework.org/schema/data/mongo
+        http://www.springframework.org/schema/data/mongo/spring-mongo-1.0.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.0.xsd">
+	
+	<!-- 
+	<bean id="localDataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<property name="driverClass" value="${local.spring.datasource.driverClassName}" />
+		<property name="jdbcUrl" value="${local.spring.datasource.url}" />
+		<property name="user" value="${local.spring.datasource.username}" />
+		<property name="password" value="${local.spring.datasource.password}" />
+		<property name="preferredTestQuery" value="SELECT 1" />
+		<property name="idleConnectionTestPeriod" value="300" />	
+		<property name="initialPoolSize" value="5" />
+		<property name="maxPoolSize" value="5" />
+		<property name="minPoolSize" value="5" />
+		<property name="maxIdleTime" value="3000" />
+	</bean>	
+	-->
+	
+	<bean id="jobsDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${jobs.spring.datasource.driverClassName}" />
+		<property name="url" value="${jobs.spring.datasource.url}" />
+		<property name="username" value="${jobs.spring.datasource.username}" />
+		<property name="password" value="${jobs.spring.datasource.password}" />
+	</bean>	
+	 
+	 
+	 
+	<bean id="readStoreDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${read.store.spring.datasource.driverClassName}" />
+		<property name="url" value="${read.store.spring.datasource.url}" />
+		<property name="username" value="${read.store.spring.datasource.username}" />
+		<property name="password" value="${read.store.spring.datasource.password}" />
+	</bean>		
+	
+	
+	<bean id="readTransactionDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${read.transaction.spring.datasource.driverClassName}" />
+		<property name="url" value="${read.transaction.spring.datasource.url}" />
+		<property name="username" value="${read.transaction.spring.datasource.username}" />
+		<property name="password" value="${read.transaction.spring.datasource.password}" />
+	</bean>			
+
+
+	<bean id="writeStoreDataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${write.store.spring.datasource.driverClassName}" />
+		<property name="url" value="${write.store.spring.datasource.url}" />
+		<property name="username" value="${write.store.spring.datasource.username}" />
+		<property name="password" value="${write.store.spring.datasource.password}" />
+	</bean>		
+	
+	
+	<bean id="writeTransactionDataSource"
+		class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+		<property name="driverClassName" value="${write.transaction.spring.datasource.driverClassName}" />
+		<property name="url" value="${write.transaction.spring.datasource.url}" />
+		<property name="username" value="${write.transaction.spring.datasource.username}" />
+		<property name="password" value="${write.transaction.spring.datasource.password}" />
+	</bean>	
+
+	
+	<!-- 
+	<bean id="dataSource" class="com.mchange.v2.c3p0.ComboPooledDataSource" destroy-method="close">
+		<property name="driverClass" value="${spring.datasource.driverClassName}" />
+		<property name="jdbcUrl" value="${spring.datasource.url}" />
+		<property name="user" value="${spring.datasource.username}" />
+		<property name="password" value="${spring.datasource.password}" />
+		<property name="preferredTestQuery" value="SELECT 1" />
+		<property name="idleConnectionTestPeriod" value="300" />	
+		<property name="initialPoolSize" value="3" />
+		<property name="maxPoolSize" value="5" />
+		<property name="minPoolSize" value="10" />
+		<property name="maxIdleTime" value="1000" />		
+	</bean>		
+	 -->
+	 
+
+	<bean id="readStoreTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+	  scope="singleton">
+	  <property name="dataSource" ref="readStoreDataSource" />
+	</bean>
+
+	<bean id="writeStoreTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+	  scope="singleton">
+	  <property name="dataSource" ref="writeStoreDataSource" />
+	</bean>
+	
+	<bean id="readTransactionTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+	  scope="singleton">
+	  <property name="dataSource" ref="readTransactionDataSource" />
+	</bean>
+	
+	<bean id="writeTransactionTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+	  scope="singleton">
+	  <property name="dataSource" ref="writeTransactionDataSource" />
+	</bean>	
+	
+	
+	
+	<bean id="jobsTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager"
+	  scope="singleton">
+	  <property name="dataSource" ref="jobsDataSource" />
+	</bean>
+	
+	
+	
+	<bean id="jobsJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="jobsDataSource"/>
+	</bean>	
+	
+	
+	
+	<bean id="readTransactionJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="readTransactionDataSource"/>
+	</bean>
+		
+	
+	<bean id="readStoreJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="readStoreDataSource"/>
+	</bean>
+	
+	
+	<bean id="writeTransactionJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="writeTransactionDataSource"/>
+	</bean>
+		
+	
+	<bean id="writeStoreJdbcTemplate" class="org.springframework.jdbc.core.JdbcTemplate">
+		<property name="dataSource" ref="writeStoreDataSource"/>
+	</bean>	
+	
+	<!-- 
+  	<mongo:mongo host="${cron.mongo.db.host}" port="${cron.mongo.db.port}">
+    	<mongo:options connections-per-host="${connections.per.host}"
+                   threads-allowed-to-block-for-connection-multiplier="${threads.allowed.to.block.for.connection.multiplier}"
+                   connect-timeout="${connect.timeout}"
+                   max-wait-time="${max.wait.time}"
+                   auto-connect-retry="${auto.connect.retry}"
+                   socket-keep-alive="${socket.keep.alive}"
+                   socket-timeout="${socket.timeout}"
+                   slave-ok="${slave.ok}"
+                   write-number="${write.number}"
+                   write-timeout="${write.timeout}"
+                   write-fsync="${write.fsync}"/>
+  	</mongo:mongo>
+  	 -->
+
+ 	<bean id="mongo" class="com.mongodb.Mongo">
+      <constructor-arg name="addr" ref="address" />
+      <constructor-arg name="options" ref="options" />
+   </bean>
+
+   <bean id="options" class="com.mongodb.MongoOptions">
+      <property name="connectionsPerHost" value="${mongo.db.pool.size}"/>
+      <property name="maxWaitTime" value="${mongo.db.pool.maxwait}"/>
+   </bean>
+
+   <bean id="address" class="com.mongodb.ServerAddress">
+      <constructor-arg name="host" value="${cron.mongo.db.host}" />
+      <constructor-arg name="port" value="${cron.mongo.db.port}" />
+   </bean>
+
+   <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+      <constructor-arg ref="mongo" />
+      <constructor-arg name="databaseName" value="${cron.mongo.db.name}" />
+   </bean>
+     	
+     	<!-- 
+     	Has connection pool issues
+  	<mongo:mongo host="${cron.mongo.db.host}" port="${cron.mongo.db.name}"/>
+	<mongo:db-factory dbname="${cron.mongo.db.name}" />
+
+
+	<bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg name="mongo" ref="mongo" />
+		<constructor-arg name="databaseName" value="${cron.mongo.db.name}"/>
+	</bean>
+     -->
+ 
+<!-- 
+
+	<mongo:mongo id="mongo" host="${cron.mongo.db.host}" port="${cron.mongo.db.port}" />
+
+	<bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+		<constructor-arg name="mongo" ref="mongo" />
+		<constructor-arg name="databaseName" value="${cron.mongo.db.name}"/>
+		<constructor-arg name="userCredentials" ref="mongoCredentials"/>
+	</bean>
+	
+    <bean id="mongoCredentials" class="org.springframework.data.authentication.UserCredentials">
+        <property name="username" value="${cron.mongo.username}" />
+        <property name="password" value="${cron.mongo.password}" />
+    </bean>
+   
+    
+  <bean id="memcachedClient"
+        class="net.spy.memcached.spring.MemcachedClientFactoryBean">
+    <property name="servers" value="${memcache.server}"/>
+    <property name="protocol" value="BINARY"/>
+  </bean>    
+     -->
+</beans>

@@ -1,0 +1,259 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:util="http://www.springframework.org/schema/util"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:batch="http://www.springframework.org/schema/batch" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/batch
+		http://www.springframework.org/schema/batch/spring-batch-3.0.xsd
+		http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans-4.0.xsd
+		http://www.springframework.org/schema/context
+        http://www.springframework.org/schema/context/spring-context-4.0.xsd
+        http://www.springframework.org/schema/util 
+		http://www.springframework.org/schema/util/spring-util-4.0.xsd">
+
+
+	<context:component-scan base-package="com.clout.cron.specialcase"/>
+
+
+	<!-- Using properties file to replace properties in xml configuration file -->
+	<bean id="jobProperties" class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+		<property name="location" value="file:/opt/cloutjobs/match/transaction_match.properties" />
+	</bean>
+	
+	<bean id="idService" class="com.clout.cron.specialcase.IdServiceImpl">
+	</bean>	
+
+	<util:map id="plaidCategoryMatches" map-class="java.util.HashMap">
+    </util:map>	
+	
+	
+	<batch:job id="transactionMatchingJob">
+	    <batch:step id="cachePartitionStep" next="cachingByKeysStep">
+			<batch:partition step="cachingStep" partitioner="cacheRangePartitioner">
+				<batch:handler grid-size="${cache.store.job.grid.size}" task-executor="taskExecutor" />
+			</batch:partition>
+	    </batch:step>
+		<batch:step id="cachingByKeysStep" next="partitionStep">
+			<batch:tasklet transaction-manager="readStoreTransactionManager">
+				<batch:chunk reader="storeByKeysItemReader"  writer="cacheItemWriter" processor-transactional="false" commit-interval="${cache.store.job.commit.interval}"/>
+			</batch:tasklet>
+		</batch:step>		    
+		<!-- Decision tasklet to decide what store index to start at -->
+	    <batch:step id="partitionStep" next="recordJobStep">
+			<batch:partition step="transactionMatchingStep" partitioner="rangePartitioner">
+				<batch:handler grid-size="${transactions.match.job.grid.size}" task-executor="taskExecutor" />
+			</batch:partition>
+	    </batch:step>    
+	    <batch:step id="recordJobStep">
+	    	<batch:tasklet ref="recordStateTasklet" />
+	    </batch:step>  
+	</batch:job>
+	
+	
+
+	<batch:step id="transactionMatchingStep">
+		<batch:tasklet transaction-manager="writeTransactionTransactionManager">
+			<batch:chunk reader="businessDataItemReader" processor="businessDataItemProcessor" processor-transactional="false" writer="businessDataItemWriter" commit-interval="${transactions.match.job.commit.interval}">
+    		</batch:chunk>
+
+		    <batch:listeners>
+				<batch:listener ref="cronStepListener" />
+				<batch:listener ref="cronWriteListener" />
+		    </batch:listeners>			
+			
+		</batch:tasklet>
+	</batch:step>
+
+
+	<!-- Business data is collected via transaction id  -->
+	<bean id="transactionPagingItemReader" class="org.springframework.batch.item.database.JdbcPagingItemReader"
+		scope="step">
+		<property name="dataSource" ref="readTransactionDataSource" />
+		<property name="queryProvider">
+			<bean
+				class="org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean">
+				<property name="dataSource" ref="readTransactionDataSource" />
+				<property name="selectClause" value="select id, transaction_id, transaction_type, currency_type, institution_transaction_id, correct_institution_transaction_id, correct_action, server_transaction_id, check_number, reference_number, confirmation_number, payee_id, payee_name, extended_payee_name, memo, type, value_type, currency_rate, original_currency, posted_date, available_date, amount, running_balance_amount, pending, normalized_payee_name, merchant, sic, source, category_name, context_type, schedule_c, clout_transaction_id, latitude, longitude, zipcode, state, city, address, sub_category_id, contact_telephone, website, confidence_level, place_type, related_ad_id, _user_id, _bank_id, api_account, banking_transaction_type, subaccount_fund_type, banking_401k_source_type, principal_amount, interest_amount, escrow_total_amount, escrow_tax_amount, escrow_insurance_amount, escrow_pmi_amount, escrow_fees_amount, escrow_other_amount, last_update_date, is_saved, is_active, is_processed " /> 
+				 <!-- , user_date  /-->
+				<property name="fromClause" value=" from transactions_raw " />
+				<property name="whereClause" value=" where is_saved = 'N' and id &gt;= :fromId and id &lt;= :toId " />
+				<property name="sortKey" value="id" />
+			</bean>
+		</property>
+		<!-- Inject via the ExecutionContext in rangePartitioner -->
+		<property name="parameterValues">
+			<map>
+				<entry key="fromId" value="#{stepExecutionContext[fromId]}" />
+				<entry key="toId" value="#{stepExecutionContext[toId]}" />
+			</map>
+		</property>
+		<property name="pageSize" value="1000" />
+		<property name="rowMapper">
+			<bean class="com.clout.cron.batch.mapper.TransactionsRawMapper" />
+		</property>
+	</bean>
+
+
+  <bean id="insertTransactionItemWriter"
+	class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+	<property name="dataSource" ref="writeTransactionDataSource" />
+	<property name="sql">
+	  <value>
+            <![CDATA[       
+            	INSERT INTO transactions (id, transaction_type, _user_id, _store_id, _chain_id, _bank_id, status, amount, _raw_id, raw_store_name, start_date, end_date, item_value, transaction_tax, latitude, longitude, zipcode, state, city, address, item_category, contact_telephone, website, confidence_level, place_type, transaction_description, is_security_risk, _related_promotion_id, match_status)
+            	VALUES (:id, :transactionType, :userId, :storeId, :chainId, :bankId, :status, :amount, :rawId, :rawStoreName, :startDate, :endDate, :itemValue, :transactionTax, :latitude, :longitude, :zipcode, :state, :city, :address, :itemCategory, :contactTelephone, :website, :confidenceLevel, :placeType, :transactionDescription, :isSecurityRisk, :relatedPromotionId, :matchStatus);
+            ]]>
+	  </value>
+	</property>
+	<!-- It will take care matching between object property and sql name parameter -->
+	<property name="itemSqlParameterSourceProvider">
+		<bean
+		class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+	</property>
+  </bean>
+
+
+  <bean id="insertStoreItemWriter"
+	class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+	<property name="dataSource" ref="writeStoreDataSource" />
+	<property name="sql">
+	  <value>
+            <![CDATA[       
+    			INSERT INTO stores (id, _chain_id, longitude, latitude, name, address_line_1, address_line_2, city, state, zipcode, _country_code, key_words, public_store_key, clout_id, start_date, email_address, has_multiple_locations, online_only, _store_owner_id, logo_url, slogan, small_cover_image, large_cover_image, _state_id, phone_number, _primary_contact_id, website, star_rating, price_range, description, is_franchise, date_entered, _entered_by, last_updated, _last_updated_by)
+				VALUES (:storeId, :chainId, :longitude, :latitude, :name, :addressLine1, :addressLine2, :city, :state, :zipcode, :countryCode, :keyWords, :publicStoreKey, :cloutId, now(), :emailAddress, :hasMultipleLocations, :onlineOnly, :storeOwnerId, :logoUrl, :slogan, :smallCoverImage, '', :stateId, :phoneNumber, :primaryContactId, :website, :starRating, :priceRange, '', :isFranchise, now(), :enteredBy, now(), :lastUpdatedBy); 
+	           ]]>
+	  </value>
+	</property>
+	<!-- It will take care matching between object property and sql name parameter -->
+	<property name="itemSqlParameterSourceProvider">
+		<bean
+		class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+	</property>
+  </bean>
+
+
+
+	<!--  Update from geolocation and google places -->
+  <bean id="storeUpdateItemWriter"
+	class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+	<property name="dataSource" ref="writeStoreDataSource" />
+	<property name="sql">
+	  <value>
+            <![CDATA[       
+            	UPDATE stores SET name = :name, address_line_1 = :addressLine1, city = :city, state = :state, zip_code = :zipcode, phone_number = :phoneNumber, key_words = :keyWords, public_store_key = :publicStoreKey  WHERE id = :storeId; 
+            ]]>
+	  </value>
+	</property>
+	<!-- It will take care matching between object property and sql name parameter -->
+	<property name="itemSqlParameterSourceProvider">
+		<bean
+		class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+	</property>
+  </bean>
+
+
+  <bean id="insertTransactionSubCategoriesItemWriter"
+	class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+	<property name="dataSource" ref="writeTransactionDataSource" />
+	<property name="sql">
+	  <value>
+            <![CDATA[       
+            	INSERT INTO transaction_sub_categories (_transaction_id, _sub_category_id, _category_id)
+            	VALUES (:transactionId, :subCategoryId, 0);
+            ]]>
+	  </value>
+	</property>
+	<!-- It will take care matching between object property and sql name parameter -->
+	<property name="itemSqlParameterSourceProvider">
+		<bean
+		class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+	</property>
+  </bean>
+
+
+  <bean id="updateTransactionRawItemWriter"
+	class="org.springframework.batch.item.database.JdbcBatchItemWriter">
+	<property name="dataSource" ref="writeTransactionDataSource" />
+	<property name="sql">
+	  <value>
+            <![CDATA[       
+            	UPDATE transactions_raw set is_saved = 'Y' where id = :id
+            ]]>
+	  </value>
+	</property>
+	<!-- It will take care matching between object property and sql name parameter -->
+	<property name="itemSqlParameterSourceProvider">
+		<bean
+		class="org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider" />
+	</property>
+  </bean>
+
+
+	
+	
+
+
+
+	<batch:step id="cachingStep">
+		<batch:tasklet transaction-manager="readStoreTransactionManager">
+			<batch:chunk reader="storeItemReader"  writer="cacheItemWriter" processor-transactional="false" commit-interval="${cache.store.job.commit.interval}"/>
+		    <batch:listeners>
+				<batch:listener ref="cacheStepExecutionListener" />
+		    </batch:listeners>	
+		</batch:tasklet>
+	</batch:step>
+	
+	
+		
+	<!-- Load it all into memory  -->
+	<bean id="storeItemReader" class="org.springframework.batch.item.database.JdbcPagingItemReader"
+		scope="step">
+		<property name="dataSource" ref="readStoreDataSource" />
+		<property name="queryProvider">
+			<bean
+				class="org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean">
+				<property name="dataSource" ref="readStoreDataSource" />
+				<property name="selectClause" value="select id, latitude, longitude, name, address_line_1, address_line_2, city, state, zipcode, _country_code, phone_number, website, public_store_key, key_words" />
+				<property name="fromClause" value="from stores" />
+				<property name="whereClause" value="where id &gt;= :cacheFromId and id &lt;= :cacheToId" />
+				<property name="sortKey" value="id" />
+			</bean>
+		</property>   
+		<!-- Inject via the ExecutionContext in rangePartitioner -->
+		<property name="parameterValues">
+			<map>
+				<entry key="cacheFromId" value="#{stepExecutionContext[cacheFromId]}" />
+				<entry key="cacheToId" value="#{stepExecutionContext[cacheToId]}" />
+			</map>
+		</property>		
+		<property name="pageSize" value="1000" />
+		<property name="rowMapper">
+			<bean class="com.clout.cron.batch.mapper.StoreMapper" />
+		</property>
+	</bean>
+	
+
+
+	<!-- Load it all into memory  -->
+	<bean id="storeByKeysItemReader" class="org.springframework.batch.item.database.JdbcPagingItemReader"
+		scope="step">
+		<property name="dataSource" ref="readStoreDataSource" />
+		<property name="queryProvider">
+			<bean
+				class="org.springframework.batch.item.database.support.SqlPagingQueryProviderFactoryBean">
+				<property name="dataSource" ref="readStoreDataSource" />
+				<property name="selectClause" value="select id, latitude, longitude, name, address_line_1, address_line_2, city, state, zipcode, _country_code, phone_number, website, public_store_key, key_words" />
+				<property name="fromClause" value="from stores" />
+				<property name="whereClause" value="where id in (#{jobExecutionContext['failedStoreIds']})" />
+				<property name="sortKey" value="id" />
+			</bean>
+		</property>   
+		<property name="pageSize" value="1000" />
+		<property name="rowMapper">
+			<bean class="com.clout.cron.batch.mapper.StoreMapper" />
+		</property>
+	</bean>
+
+	
+
+</beans>
